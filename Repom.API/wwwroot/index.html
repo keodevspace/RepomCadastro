@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repom | Gestão de Pessoas e Veículos</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --border: #334155;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --danger: #ef4444;
+            --success: #10b981;
+            --warning: #f59e0b;
+        }
+        * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { background: var(--bg); color: var(--text); margin: 0; padding: 24px; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 24px; }
+        header h1 { margin: 0; font-size: 1.5rem; }
+        header a { color: var(--primary); text-decoration: none; font-size: 0.9rem; border: 1px solid var(--primary); padding: 6px 12px; border-radius: 6px; }
+        .tabs { display: flex; gap: 12px; margin-bottom: 24px; }
+        .tab-btn { background: var(--card); color: var(--muted); border: 1px solid var(--border); padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .grid { display: grid; grid-template-columns: 360px 1fr; gap: 24px; }
+        @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+        .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+        .card h2 { margin-top: 0; font-size: 1.15rem; border-bottom: 1px solid var(--border); padding-bottom: 10px; }
+        .form-group { margin-bottom: 14px; }
+        label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 5px; }
+        input, select { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 0.95rem; }
+        input:focus, select:focus { outline: none; border-color: var(--primary); }
+        .btn { width: 100%; padding: 11px; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-secondary { background: var(--border); color: var(--text); margin-top: 8px; }
+        .btn-sm { width: auto; padding: 5px 10px; font-size: 0.8rem; margin-right: 4px; }
+        .btn-edit { background: var(--warning); color: #000; }
+        .btn-del { background: var(--danger); color: white; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid var(--border); }
+        th { color: var(--muted); font-weight: 600; }
+        .badge { background: #334155; padding: 3px 8px; border-radius: 12px; font-size: 0.78rem; display: inline-block; margin: 2px; }
+        .toast { position: fixed; bottom: 20px; right: 20px; padding: 14px 20px; border-radius: 8px; color: white; font-weight: 500; display: none; z-index: 100; box-shadow: 0 10px 15px rgba(0,0,0,0.3); }
+        .toast.error { background: var(--danger); }
+        .toast.success { background: var(--success); }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <div>
+            <h1>Repom — Gestão de Frota & Proprietários</h1>
+            <small style="color: var(--muted);">Desafio Técnico C# .NET | API REST + Interface Integrada</small>
+        </div>
+        <a href="/swagger" target="_blank">Abrir Swagger API ↗</a>
+    </header>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('pessoas', this)">1. Cadastro de Pessoas</button>
+        <button class="tab-btn" onclick="switchTab('veiculos', this)">2. Cadastro de Veículos</button>
+    </div>
+
+    <!-- ABA PESSOAS -->
+    <div id="tab-pessoas" class="grid">
+        <div class="card">
+            <h2 id="pessoa-form-title">Nova Pessoa</h2>
+            <form id="form-pessoa" onsubmit="salvarPessoa(event)">
+                <input type="hidden" id="pessoa-id">
+                <div class="form-group">
+                    <label>Nome Completo *</label>
+                    <input type="text" id="pessoa-nome" required placeholder="Ex: João da Silva">
+                </div>
+                <div class="form-group">
+                    <label>CPF (somente números) *</label>
+                    <input type="text" id="pessoa-cpf" required maxlength="14" placeholder="000.000.000-00">
+                </div>
+                <div class="form-group">
+                    <label>Data de Nascimento *</label>
+                    <input type="date" id="pessoa-nasc" required>
+                </div>
+                <div class="form-group">
+                    <label>E-mail *</label>
+                    <input type="email" id="pessoa-email" required placeholder="joao@email.com">
+                </div>
+                <div class="form-group">
+                    <label>Telefone</label>
+                    <input type="text" id="pessoa-tel" placeholder="(11) 99999-9999">
+                </div>
+                <button type="submit" class="btn btn-primary">Salvar Pessoa</button>
+                <button type="button" id="btn-cancel-pessoa" class="btn btn-secondary hidden" onclick="resetFormPessoa()">Cancelar Edição</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Pessoas Cadastradas</h2>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>CPF</th>
+                            <th>Contato</th>
+                            <th>Veículos Vinculados</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-pessoas"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ABA VEÍCULOS -->
+    <div id="tab-veiculos" class="grid hidden">
+        <div class="card">
+            <h2 id="veiculo-form-title">Novo Veículo</h2>
+            <form id="form-veiculo" onsubmit="salvarVeiculo(event)">
+                <input type="hidden" id="veiculo-id">
+                <div class="form-group">
+                    <label>Proprietário (Pessoa) *</label>
+                    <select id="veiculo-pessoa" required>
+                        <option value="">Selecione um proprietário...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Placa *</label>
+                    <input type="text" id="veiculo-placa" required maxlength="8" placeholder="ABC1D23 ou ABC-1234">
+                </div>
+                <div class="form-group">
+                    <label>Marca *</label>
+                    <input type="text" id="veiculo-marca" required placeholder="Ex: Volkswagen">
+                </div>
+                <div class="form-group">
+                    <label>Modelo *</label>
+                    <input type="text" id="veiculo-modelo" required placeholder="Ex: Constellation 24.280">
+                </div>
+                <div class="form-group">
+                    <label>Ano de Fabricação *</label>
+                    <input type="number" id="veiculo-ano" required min="1886" max="2026" placeholder="Ex: 2024">
+                </div>
+                <button type="submit" class="btn btn-primary">Salvar Veículo</button>
+                <button type="button" id="btn-cancel-veiculo" class="btn btn-secondary hidden" onclick="resetFormVeiculo()">Cancelar Edição</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Veículos Cadastrados</h2>
+            <div style="overflow-x:auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Placa</th>
+                            <th>Marca / Modelo</th>
+                            <th>Ano</th>
+                            <th>Proprietário</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-veiculos"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+    let pessoasCache = [];
+    let veiculosCache = [];
+
+    function showToast(msg, type = 'success') {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.className = `toast ${type}`;
+        t.style.display = 'block';
+        setTimeout(() => t.style.display = 'none', 4000);
+    }
+
+    function switchTab(tab, btn) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-pessoas').classList.toggle('hidden', tab !== 'pessoas');
+        document.getElementById('tab-veiculos').classList.toggle('hidden', tab !== 'veiculos');
+    }
+
+    async function apiRequest(url, options = {}) {
+        const res = await fetch(url, {
+            headers: { 'Content-Type': 'application/json' },
+            ...options
+        });
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({ detail: 'Erro inesperado na requisição.' }));
+            throw new Error(err.detail || err.title || 'Falha na operação');
+        }
+        return res.status === 204 ? null : res.json();
+    }
+
+    async function carregarTudo() {
+        try {
+            pessoasCache = await apiRequest('/api/pessoas');
+            veiculosCache = await apiRequest('/api/veiculos');
+            renderPessoas();
+            renderVeiculos();
+            popularSelectPessoas();
+        } catch (e) {
+            showToast(e.message, 'error');
+        }
+    }
+
+    function renderPessoas() {
+        const tbody = document.getElementById('lista-pessoas');
+        tbody.innerHTML = pessoasCache.map(p => `
+            <tr>
+                <td><strong>${p.nomeCompleto}</strong><br><small style="color:var(--muted)">Nasc: ${p.dataNascimento}</small></td>
+                <td>${p.cpf.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')}</td>
+                <td>${p.email}<br><small style="color:var(--muted)">${p.telefone || '-'}</small></td>
+                <td>${p.veiculos.length ? p.veiculos.map(v => `<span class="badge">${v.placa} (${v.modelo})</span>`).join('') : '<small style="color:var(--muted)">Nenhum</small>'}</td>
+                <td>
+                    <button class="btn btn-sm btn-edit" onclick="editarPessoa('${p.id}')">Editar</button>
+                    <button class="btn btn-sm btn-del" onclick="excluirPessoa('${p.id}')">Excluir</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function renderVeiculos() {
+        const tbody = document.getElementById('lista-veiculos');
+        tbody.innerHTML = veiculosCache.map(v => `
+            <tr>
+                <td><strong>${v.placa}</strong></td>
+                <td>${v.marca} ${v.modelo}</td>
+                <td>${v.anoFabricacao}</td>
+                <td>${v.proprietarioNome}</td>
+                <td>
+                    <button class="btn btn-sm btn-edit" onclick="editarVeiculo('${v.id}')">Editar</button>
+                    <button class="btn btn-sm btn-del" onclick="excluirVeiculo('${v.id}')">Excluir</button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    function popularSelectPessoas() {
+        const sel = document.getElementById('veiculo-pessoa');
+        const current = sel.value;
+        sel.innerHTML = '<option value="">Selecione um proprietário...</option>' +
+            pessoasCache.map(p => `<option value="${p.id}">${p.nomeCompleto} (CPF: ${p.cpf})</option>`).join('');
+        sel.value = current;
+    }
+
+    async function salvarPessoa(e) {
+        e.preventDefault();
+        const id = document.getElementById('pessoa-id').value;
+        const payload = {
+            nomeCompleto: document.getElementById('pessoa-nome').value,
+            cpf: document.getElementById('pessoa-cpf').value,
+            dataNascimento: document.getElementById('pessoa-nasc').value,
+            email: document.getElementById('pessoa-email').value,
+            telefone: document.getElementById('pessoa-tel').value
+        };
+        try {
+            if (id) {
+                await apiRequest(`/api/pessoas/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+                showToast('Pessoa atualizada com sucesso!');
+            } else {
+                await apiRequest('/api/pessoas', { method: 'POST', body: JSON.stringify(payload) });
+                showToast('Pessoa cadastrada com sucesso!');
+            }
+            resetFormPessoa();
+            carregarTudo();
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
+    }
+
+    function editarPessoa(id) {
+        const p = pessoasCache.find(x => x.id === id);
+        if (!p) return;
+        document.getElementById('pessoa-id').value = p.id;
+        document.getElementById('pessoa-nome').value = p.nomeCompleto;
+        document.getElementById('pessoa-cpf').value = p.cpf;
+        document.getElementById('pessoa-nasc').value = p.dataNascimento;
+        document.getElementById('pessoa-email').value = p.email;
+        document.getElementById('pessoa-tel').value = p.telefone;
+        document.getElementById('pessoa-form-title').textContent = 'Editar Pessoa';
+        document.getElementById('btn-cancel-pessoa').classList.remove('hidden');
+    }
+
+    function resetFormPessoa() {
+        document.getElementById('form-pessoa').reset();
+        document.getElementById('pessoa-id').value = '';
+        document.getElementById('pessoa-form-title').textContent = 'Nova Pessoa';
+        document.getElementById('btn-cancel-pessoa').classList.add('hidden');
+    }
+
+    async function excluirPessoa(id) {
+        if (!confirm('Deseja excluir esta pessoa? Os veículos vinculados também serão removidos.')) return;
+        try {
+            await apiRequest(`/api/pessoas/${id}`, { method: 'DELETE' });
+            showToast('Pessoa removida.');
+            carregarTudo();
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
+    }
+
+    async function salvarVeiculo(e) {
+        e.preventDefault();
+        const id = document.getElementById('veiculo-id').value;
+        const payload = {
+            pessoaId: document.getElementById('veiculo-pessoa').value,
+            placa: document.getElementById('veiculo-placa').value,
+            marca: document.getElementById('veiculo-marca').value,
+            modelo: document.getElementById('veiculo-modelo').value,
+            anoFabricacao: parseInt(document.getElementById('veiculo-ano').value)
+        };
+        try {
+            if (id) {
+                await apiRequest(`/api/veiculos/${id}`, { method: 'PUT', body: JSON.stringify(payload) });
+                showToast('Veículo atualizado com sucesso!');
+            } else {
+                await apiRequest('/api/veiculos', { method: 'POST', body: JSON.stringify(payload) });
+                showToast('Veículo cadastrado com sucesso!');
+            }
+            resetFormVeiculo();
+            carregarTudo();
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
+    }
+
+    function editarVeiculo(id) {
+        const v = veiculosCache.find(x => x.id === id);
+        if (!v) return;
+        document.getElementById('veiculo-id').value = v.id;
+        document.getElementById('veiculo-pessoa').value = v.pessoaId;
+        document.getElementById('veiculo-placa').value = v.placa;
+        document.getElementById('veiculo-marca').value = v.marca;
+        document.getElementById('veiculo-modelo').value = v.modelo;
+        document.getElementById('veiculo-ano').value = v.anoFabricacao;
+        document.getElementById('veiculo-form-title').textContent = 'Editar Veículo';
+        document.getElementById('btn-cancel-veiculo').classList.remove('hidden');
+    }
+
+    function resetFormVeiculo() {
+        document.getElementById('form-veiculo').reset();
+        document.getElementById('veiculo-id').value = '';
+        document.getElementById('veiculo-form-title').textContent = 'Novo Veículo';
+        document.getElementById('btn-cancel-veiculo').classList.add('hidden');
+    }
+
+    async function excluirVeiculo(id) {
+        if (!confirm('Deseja excluir este veículo?')) return;
+        try {
+            await apiRequest(`/api/veiculos/${id}`, { method: 'DELETE' });
+            showToast('Veículo removido.');
+            carregarTudo();
+        } catch (err) {
+            showToast(err.message, 'error');
+        }
+    }
+
+    document.getElementById('veiculo-ano').max = new Date().getFullYear();
+    carregarTudo();
+</script>
+</body>
+</html>

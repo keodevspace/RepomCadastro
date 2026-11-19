@@ -1,22 +1,44 @@
+using Microsoft.EntityFrameworkCore;
+using Repom.API.Middlewares;
+using Repom.Application.Services;
+using Repom.Domain.Interfaces;
+using Repom.Infrastructure.Data;
+using Repom.Infrastructure.Repositories;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// Banco de Dados SQLite
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseSqlite("Data Source=repom_frota.db"));
+
+// Injeção de Dependência (Repositories & Services)
+builder.Services.AddScoped<IPessoaRepository, PessoaRepository>();
+builder.Services.AddScoped<IVeiculoRepository, VeiculoRepository>();
+builder.Services.AddScoped<PessoaService>();
+builder.Services.AddScoped<VeiculoService>();
 
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
+// Garante criação automática do banco SQLite na primeira execução
+using (var scope = app.Services.CreateScope()) {
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
 }
 
-app.UseHttpsRedirection();
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-app.UseAuthorization();
+if (app.Environment.IsDevelopment()) {
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
+
+// Serve o arquivo único HTML da interface gráfica em wwwroot/index.html
+app.UseDefaultFiles();
+app.UseStaticFiles();
 
 app.MapControllers();
 

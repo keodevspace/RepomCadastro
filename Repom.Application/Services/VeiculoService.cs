@@ -27,15 +27,23 @@ public class VeiculoService {
     }
 
     public async Task<VeiculoResponseDto> CriarAsync(VeiculoRequestDto dto) {
-        var pessoa = await _pessoaRepository.ObterPorIdAsync(dto.PessoaId)
+        var pessoaExistente = await _pessoaRepository.ObterPorIdAsync(dto.PessoaId)
             ?? throw new DomainException("A pessoa informada para vínculo não existe.");
 
-        var placaLimpa = Regex.Replace(dto.Placa ?? "", @"[^a-zA-Z0-9]", "").ToUpperInvariant();
+        var placaSegura = dto.Placa ?? string.Empty;
+        var placaLimpa = Regex.Replace(placaSegura, @"[^a-zA-Z0-9]", string.Empty).ToUpperInvariant();
+
         var existente = await _veiculoRepository.ObterPorPlacaAsync(placaLimpa);
         if (existente is not null)
             throw new DomainException("Já existe um veículo cadastrado com esta placa.");
 
-        var veiculo = new Veiculo(dto.Placa, dto.AnoFabricacao, dto.Marca, dto.Modelo, dto.PessoaId);
+        var veiculo = new Veiculo(
+            placaSegura,
+            dto.AnoFabricacao,
+            dto.Marca ?? string.Empty,
+            dto.Modelo ?? string.Empty,
+            pessoaExistente.Id);
+
         await _veiculoRepository.AdicionarAsync(veiculo);
 
         var veiculoSalvo = await _veiculoRepository.ObterPorIdAsync(veiculo.Id);
@@ -46,15 +54,23 @@ public class VeiculoService {
         var veiculo = await _veiculoRepository.ObterPorIdAsync(id)
             ?? throw new KeyNotFoundException("Veículo não encontrado.");
 
-        var pessoa = await _pessoaRepository.ObterPorIdAsync(dto.PessoaId)
+        var pessoaExistente = await _pessoaRepository.ObterPorIdAsync(dto.PessoaId)
             ?? throw new DomainException("A pessoa informada para vínculo não existe.");
 
-        var placaLimpa = Regex.Replace(dto.Placa ?? "", @"[^a-zA-Z0-9]", "").ToUpperInvariant();
+        var placaSegura = dto.Placa ?? string.Empty;
+        var placaLimpa = Regex.Replace(placaSegura, @"[^a-zA-Z0-9]", string.Empty).ToUpperInvariant();
+
         var existente = await _veiculoRepository.ObterPorPlacaAsync(placaLimpa);
         if (existente is not null && existente.Id != id)
             throw new DomainException("Esta placa já pertence a outro veículo.");
 
-        veiculo.AtualizarDados(dto.Placa, dto.AnoFabricacao, dto.Marca, dto.Modelo, dto.PessoaId);
+        veiculo.AtualizarDados(
+            placaSegura,
+            dto.AnoFabricacao,
+            dto.Marca ?? string.Empty,
+            dto.Modelo ?? string.Empty,
+            pessoaExistente.Id);
+
         await _veiculoRepository.AtualizarAsync(veiculo);
 
         var atualizado = await _veiculoRepository.ObterPorIdAsync(id);
@@ -67,13 +83,13 @@ public class VeiculoService {
         await _veiculoRepository.RemoverAsync(veiculo);
     }
 
-    private static VeiculoResponseDto MapearParaResponse(Veiculo v) => new(
-        v.Id,
-        v.Placa,
-        v.AnoFabricacao,
-        v.Marca,
-        v.Modelo,
-        v.PessoaId,
-        v.Pessoa?.NomeCompleto ?? "Não identificado"
+    private static VeiculoResponseDto MapearParaResponse(Veiculo veiculo) => new(
+        veiculo.Id,
+        veiculo.Placa,
+        veiculo.AnoFabricacao,
+        veiculo.Marca,
+        veiculo.Modelo,
+        veiculo.PessoaId,
+        veiculo.Pessoa?.NomeCompleto ?? "Não identificado"
     );
 }

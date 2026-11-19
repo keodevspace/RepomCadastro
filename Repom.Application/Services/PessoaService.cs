@@ -25,12 +25,20 @@ public class PessoaService {
     }
 
     public async Task<PessoaResponseDto> CriarAsync(PessoaRequestDto dto) {
-        var cpfLimpo = Regex.Replace(dto.Cpf ?? "", @"[^\d]", "");
+        var cpfSeguro = dto.Cpf ?? string.Empty;
+        var cpfLimpo = Regex.Replace(cpfSeguro, @"[^\d]", string.Empty);
+
         var existente = await _pessoaRepository.ObterPorCpfAsync(cpfLimpo);
         if (existente is not null)
             throw new DomainException("Já existe uma pessoa cadastrada com este CPF.");
 
-        var pessoa = new Pessoa(dto.NomeCompleto, dto.Cpf, dto.DataNascimento, dto.Email, dto.Telefone);
+        var pessoa = new Pessoa(
+            dto.NomeCompleto ?? string.Empty,
+            cpfSeguro,
+            dto.DataNascimento,
+            dto.Email ?? string.Empty,
+            dto.Telefone ?? string.Empty);
+
         await _pessoaRepository.AdicionarAsync(pessoa);
         return MapearParaResponse(pessoa);
     }
@@ -39,12 +47,20 @@ public class PessoaService {
         var pessoa = await _pessoaRepository.ObterPorIdAsync(id)
             ?? throw new KeyNotFoundException("Pessoa não encontrada.");
 
-        var cpfLimpo = Regex.Replace(dto.Cpf ?? "", @"[^\d]", "");
+        var cpfSeguro = dto.Cpf ?? string.Empty;
+        var cpfLimpo = Regex.Replace(cpfSeguro, @"[^\d]", string.Empty);
+
         var existente = await _pessoaRepository.ObterPorCpfAsync(cpfLimpo);
         if (existente is not null && existente.Id != id)
             throw new DomainException("Este CPF já pertence a outro cadastro.");
 
-        pessoa.AtualizarDados(dto.NomeCompleto, dto.Cpf, dto.DataNascimento, dto.Email, dto.Telefone);
+        pessoa.AtualizarDados(
+            dto.NomeCompleto ?? string.Empty,
+            cpfSeguro,
+            dto.DataNascimento,
+            dto.Email ?? string.Empty,
+            dto.Telefone ?? string.Empty);
+
         await _pessoaRepository.AtualizarAsync(pessoa);
         return MapearParaResponse(pessoa);
     }
@@ -55,13 +71,18 @@ public class PessoaService {
         await _pessoaRepository.RemoverAsync(pessoa);
     }
 
-    private static PessoaResponseDto MapearParaResponse(Pessoa p) => new(
-        p.Id,
-        p.NomeCompleto,
-        p.Cpf,
-        p.DataNascimento,
-        p.Email,
-        p.Telefone,
-        p.Veiculos.Select(v => new VeiculoResumoDto(v.Id, v.Placa, v.AnoFabricacao, v.Marca, v.Modelo))
+    private static PessoaResponseDto MapearParaResponse(Pessoa pessoa) => new(
+        pessoa.Id,
+        pessoa.NomeCompleto,
+        pessoa.Cpf,
+        pessoa.DataNascimento,
+        pessoa.Email,
+        pessoa.Telefone,
+        pessoa.Veiculos.Select(veiculo => new VeiculoResumoDto(
+            veiculo.Id,
+            veiculo.Placa,
+            veiculo.AnoFabricacao,
+            veiculo.Marca,
+            veiculo.Modelo))
     );
 }

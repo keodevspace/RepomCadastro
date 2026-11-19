@@ -14,7 +14,7 @@ public class Pessoa {
     private readonly List<Veiculo> _veiculos = new();
     public IReadOnlyCollection<Veiculo> Veiculos => _veiculos.AsReadOnly();
 
-    protected Pessoa() { } // EF Core
+    protected Pessoa() { }
 
     public Pessoa(string nomeCompleto, string cpf, DateOnly dataNascimento, string email, string telefone) {
         Id = Guid.NewGuid();
@@ -25,11 +25,12 @@ public class Pessoa {
         if (string.IsNullOrWhiteSpace(nomeCompleto))
             throw new DomainException("O nome completo é obrigatório.");
 
-        var cpfLimpo = Regex.Replace(cpf ?? "", @"[^\d]", "");
+        var cpfLimpo = Regex.Replace(cpf ?? string.Empty, @"[^\d]", string.Empty);
         if (cpfLimpo.Length != 11)
             throw new DomainException("CPF inválido. Deve conter 11 dígitos numéricos.");
 
-        if (string.IsNullOrWhiteSpace(email) || !Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+        var emailNormalizado = (email ?? string.Empty).Trim().ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(emailNormalizado) || !Regex.IsMatch(emailNormalizado, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
             throw new DomainException("Formato de e-mail inválido.");
 
         if (dataNascimento > DateOnly.FromDateTime(DateTime.Today))
@@ -38,7 +39,7 @@ public class Pessoa {
         NomeCompleto = nomeCompleto.Trim();
         Cpf = cpfLimpo;
         DataNascimento = dataNascimento;
-        Email = email.Trim().ToLowerInvariant();
-        Telefone = telefone?.Trim() ?? string.Empty;
+        Email = emailNormalizado;
+        Telefone = (telefone ?? string.Empty).Trim();
     }
 }

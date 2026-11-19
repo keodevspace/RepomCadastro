@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="Repom.API/Repom.API.csproj" />
+  <Project Path="Repom.Application/Repom.Application.csproj" />
+  <Project Path="Repom.Domain/Repom.Domain.csproj" />
+  <Project Path="Repom.Infrastructure/Repom.Infrastructure.csproj" />
+  <Project Path="Repom.Tests/Repom.Tests.csproj" />
+</Solution>

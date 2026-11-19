@@ -1,0 +1,6 @@
+@Repom.API_HostAddress = http://localhost:5183
+
+GET {{Repom.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
